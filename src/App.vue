@@ -44,7 +44,9 @@
                 CHD
               </span>
             </div>
-            <div class="text-sm text-red-600">Такой тикер уже добавлен</div>
+            <div v-show="tickerUse" class="text-sm text-red-600">
+              Такой тикер уже добавлен
+            </div>
           </div>
         </div>
         <button
@@ -68,6 +70,31 @@
           Добавить
         </button>
       </section>
+      <div
+        v-show="!download"
+        class="fixed w-100 h-100 opacity-80 bg-purple-800 inset-0 z-50 flex items-center justify-center"
+      >
+        <svg
+          class="animate-spin -ml-1 mr-3 h-12 w-12 text-white"
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+        >
+          <circle
+            class="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            stroke-width="4"
+          ></circle>
+          <path
+            class="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+          ></path>
+        </svg>
+      </div>
 
       <hr
         class="w-full border-t border-gray-600 my-4"
@@ -160,14 +187,28 @@
 
 <script>
 export default {
-  nane: "App",
+  name: "App",
   data() {
     return {
       ticker: "",
       tickers: [],
       selObj: null,
       graph: [],
+      tickerUse: false,
+      download: false,
     };
+  },
+  watch: {
+    ticker: {
+      handler: function () {
+        if (this.tickerUse) return (this.tickerUse = false);
+      },
+    },
+  },
+  beforeCreate: function () {
+    setInterval(async () => {
+      this.download = true;
+    }, 1000);
   },
   methods: {
     select(ticker) {
@@ -188,15 +229,25 @@ export default {
       this.selObj = null;
       console.log(this.selObj);
     },
+    useTicker(tickers, currentTicker) {
+      let findTicker =
+        this.tickers.find((i) => i.name === currentTicker.name) == undefined
+          ? (this.tickerUse = false)
+          : (this.tickerUse = true);
+      if (!findTicker) {
+        this.tickers.push(currentTicker);
+        this.ticker = "";
+      }
+    },
     add() {
       const currentTicker = {
-        name: this.ticker,
+        name: this.ticker.toUpperCase(),
         price: 0,
       };
       if (this.ticker === "") {
         currentTicker.name = "UNKNOWN";
       }
-      this.tickers.push(currentTicker);
+      this.useTicker(this.tickers, currentTicker);
       setInterval(async () => {
         const f = await fetch(
           `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=46e7826e650c7034d5ab9885ea9e8b9712000728ae17b2340f13518bdb4d7e07`
@@ -211,8 +262,6 @@ export default {
           this.graph.push(data.USD);
         }
       }, 5000);
-
-      this.ticker = "";
     },
   },
 };
