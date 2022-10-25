@@ -210,7 +210,31 @@ export default {
       this.download = true;
     }, 1000);
   },
+  created() {
+    const tickersData = localStorage.getItem("cryptonomicon-list");
+    if (tickersData) {
+      this.tickers = JSON.parse(tickersData);
+      this.tickers.forEach((ticker) => {
+        this.subscribeToUpdates(ticker.name);
+      });
+    }
+  },
   methods: {
+    subscribeToUpdates(tickerName) {
+      setInterval(async () => {
+        const f = await fetch(
+          `https://min-api.cryptocompare.com/data/price?fsym=${tickerName}&tsyms=USD&api_key=46e7826e650c7034d5ab9885ea9e8b9712000728ae17b2340f13518bdb4d7e07`
+        );
+
+        const data = await f.json();
+        this.tickers.find((t) => t.name === tickerName).price =
+          data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
+
+        if (this.selObj?.name === tickerName) {
+          this.graph.push(data.USD);
+        }
+      }, 5000);
+    },
     select(ticker) {
       this.selObj = ticker;
       this.graph = [];
@@ -227,7 +251,6 @@ export default {
     handleDelete(ticker) {
       this.tickers = this.tickers.filter((t) => t != ticker);
       this.selObj = null;
-      console.log(this.selObj);
     },
     useTicker(tickers, currentTicker) {
       let findTicker =
@@ -248,20 +271,8 @@ export default {
         currentTicker.name = "UNKNOWN";
       }
       this.useTicker(this.tickers, currentTicker);
-      setInterval(async () => {
-        const f = await fetch(
-          `https://min-api.cryptocompare.com/data/price?fsym=${currentTicker.name}&tsyms=USD&api_key=46e7826e650c7034d5ab9885ea9e8b9712000728ae17b2340f13518bdb4d7e07`
-        );
-
-        const data = await f.json();
-        console.log(data);
-        this.tickers.find((t) => t.name === currentTicker.name).price =
-          data.USD > 1 ? data.USD.toFixed(2) : data.USD.toPrecision(2);
-
-        if (this.selObj?.name === currentTicker.name) {
-          this.graph.push(data.USD);
-        }
-      }, 5000);
+      localStorage.setItem("cryptonomicon-list", JSON.stringify(this.tickers));
+      this.subscribeToUpdates(currentTicker.name);
     },
   },
 };
