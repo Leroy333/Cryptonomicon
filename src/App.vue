@@ -214,10 +214,9 @@ export default {
     };
   },
   watch: {
-    ticker: {
-      handler: function () {
-        if (this.tickerUse) return (this.tickerUse = false);
-      },
+    ticker() {
+      this.page = 1;
+      if (this.tickerUse) return (this.tickerUse = false);
     },
     filter() {
       this.page = 1;
